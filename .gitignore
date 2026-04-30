@@ -1,0 +1,28 @@
+# Environment / secrets — never commit real env files
+.env
+.env.*
+!*.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+dist/
+build/
+*.egg-info/
+
+# Test / tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Claude Code
+.claude/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
