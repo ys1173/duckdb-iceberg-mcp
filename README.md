@@ -1,8 +1,38 @@
 # duckdb-iceberg-mcp
 
-An MCP server that lets AI assistants query Apache Iceberg tables on S3 via AWS Glue Data Catalog, using DuckDB as the embedded query engine.
+An MCP server that lets AI assistants query Apache Iceberg tables on S3 via AWS Glue Data Catalog. DuckDB is the embedded query engine — Apache Arrow columnar format, vectorized execution, direct S3 reads with no data movement.
 
 Built on the official [Python MCP SDK](https://github.com/modelcontextprotocol/python-sdk). Tested with LibreChat and OpenAI Codex.
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph clients["MCP Clients"]
+        direction LR
+        LC["LibreChat"]
+        CX["OpenAI Codex"]
+        CD["Claude Desktop"]
+    end
+
+    subgraph server["duckdb-iceberg-mcp"]
+        direction TB
+        MCP["MCP Protocol Layer\nstdio · Streamable HTTP · SSE\nJWT auth · write guard · row/char limits"]
+        DDB["⚡ DuckDB\nApache Arrow columnar engine\nVectorized execution · Direct S3 reads\nhttpfs · iceberg · aws extensions"]
+        MCP <--> DDB
+    end
+
+    subgraph aws["AWS"]
+        direction TB
+        GLUE["AWS Glue Data Catalog\nDatabases · Tables · Schema\nIceberg metadata"]
+        S3["Amazon S3\nApache Iceberg tables\nParquet data files"]
+    end
+
+    clients -- "MCP Protocol\n(tools/list · tools/call)" --> MCP
+    MCP -- "boto3\nmetadata · schema\nIceberg manifest resolution" --> GLUE
+    DDB -- "httpfs extension\ncolumnar Parquet reads" --> S3
+    GLUE -. "table locations" .-> MCP
+```
 
 ## Features
 
