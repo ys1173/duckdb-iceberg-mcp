@@ -6,8 +6,6 @@ DuckDB runs on your machine and reads the required metadata and data from S3. Yo
 
 Built on the official [Python MCP SDK](https://github.com/modelcontextprotocol/python-sdk).
 
-This MCP server is complementary to [telemetry-iceberg-adaptor](https://github.com/ys1173/telemetry-iceberg-adaptor), which ingests telemetry data into Apache Iceberg. Use that project to write data and this project to query it through MCP-enabled AI clients.
-
 ## What's new in v0.2.0
 
 - FFWD/Lakekeeper Iceberg REST support with OAuth2 client credentials and catalog-vended S3 access.
@@ -125,7 +123,7 @@ The CLI or MCP tool executes SQL in local DuckDB. DuckDB authenticates to FFWD's
 - SQL read-only checks are **not a sandbox**: SQL can read files and remote resources accessible to the host. Use trusted agents, least-privilege FFWD credentials, and OS/container isolation for untrusted users. HTTP defaults to localhost; require authentication and TLS before exposing it to a network. Full-mode JWT validation does not supply an OAuth login service.
 - This queries committed Iceberg snapshots, not FFWD's live ingestion buffer. Freshness depends on sink commits; performance depends on partitioning, file sizes, selected columns, and the client's network distance from S3. Prefer time filters; `ORDER BY ... LIMIT 10` may still scan substantial data.
 
-Troubleshooting: authentication errors → check your key pair and OAuth URL; catalog 403 → check FFWD authorization; S3 403 → check vending/storage permissions and network restrictions. Run `check --table ...` to separate catalog discovery from data reads. For detailed FFWD onboarding, this quick start is the supported path; the following sections retain legacy Glue transport/configuration examples.
+Troubleshooting: authentication errors → check your key pair and OAuth URL; catalog 403 → check FFWD authorization; S3 403 → check vending/storage permissions and network restrictions. Run `check --table ...` to separate catalog discovery from data reads. For FFWD onboarding, use this quick start. AWS Glue remains supported as an optional backend; its installation and configuration are documented below.
 
 ## Live FFWD verification
 
@@ -149,7 +147,7 @@ duckdb-iceberg check --env-file .env --table ffwd.network.network_logs
 
 Use a table discovered in your own warehouse; the sample namespace is not required. GitHub CI uses synthetic credentials and local fixtures, never a customer lake.
 
-## Legacy Glue architecture
+## AWS Glue architecture
 
 ```text
                                               +----------------------+
@@ -223,7 +221,7 @@ pip install -e '.[glue]'
 
 ---
 
-## Legacy AWS Glue quick start
+## AWS Glue quick start
 
 ### stdio (local AI client)
 
@@ -376,7 +374,7 @@ Executes one SQL statement. FFWD tables can be queried directly by fully qualifi
 | `MCP_API_KEY` | *(empty)* | Static bearer token for easy mode HTTP. Empty = no auth |
 | `JWKS_URL` | *(required in full mode)* | JWKS endpoint for JWT validation |
 | `JWT_AUDIENCE` | `duckdb-mcp` | Expected `aud` claim in JWTs |
-| `CATALOG_TYPE` | `glue` | `rest` for FFWD; `glue` for legacy AWS Glue |
+| `CATALOG_TYPE` | `glue` | `rest` for FFWD; `glue` for AWS Glue |
 | `DUCKDB_MCP_ENV_FILE` | *(empty)* | Explicit environment-file path; CLI `--env-file` takes precedence |
 | `CATALOG_NAME` | `ffwd` | REST catalog SQL alias |
 | `FFWD_CATALOG_ENDPOINT` | *(required for REST)* | Complete endpoint copied from FFWD UI |
