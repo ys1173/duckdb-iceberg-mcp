@@ -20,6 +20,8 @@ build/
 
 # Claude Code
 .claude/
+.mcp.json
+ffwd-connection.sql
 
 # Logs
 *.log

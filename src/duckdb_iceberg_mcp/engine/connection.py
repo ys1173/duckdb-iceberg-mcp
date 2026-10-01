@@ -2,23 +2,28 @@ import duckdb
 
 from duckdb_iceberg_mcp.config import Settings
 
-_EXTENSIONS = ["httpfs", "iceberg", "aws"]
 
-
-def _bootstrap(conn: duckdb.DuckDBPyConnection) -> None:
-    for ext in _EXTENSIONS:
+def _bootstrap(conn: duckdb.DuckDBPyConnection, config: Settings) -> None:
+    extensions = ["httpfs", "iceberg"]
+    if config.catalog_type == "glue" or config.access_delegation_mode == "none":
+        extensions.append("aws")
+    for ext in extensions:
         conn.execute(f"INSTALL {ext}; LOAD {ext};")
-    # Allow DuckDB to glob the metadata dir to locate the latest Iceberg version
-    # when no version-hint.text is present. Safe for read-only workloads.
-    conn.execute("SET unsafe_enable_version_guessing = true;")
 
 
 def new_connection(config: Settings) -> duckdb.DuckDBPyConnection:
     """Create a bootstrapped in-memory DuckDB connection with the catalog configured."""
     conn = duckdb.connect(":memory:")
-    _bootstrap(conn)
-
-    from duckdb_iceberg_mcp.catalog.glue import setup
-    setup(conn, config)
-
-    return conn
+    try:
+        conn.execute("SET memory_limit = ?", [config.duckdb_memory_limit])
+        conn.execute("SET threads = ?", [config.duckdb_threads])
+        _bootstrap(conn, config)
+        if config.catalog_type == "rest":
+            from duckdb_iceberg_mcp.catalog.rest import setup
+        else:
+            from duckdb_iceberg_mcp.catalog.glue import setup
+        setup(conn, config)
+        return conn
+    except Exception as exc:
+        conn.close()
+        raise RuntimeError("Connection failed: " + config.redact(str(exc))) from None

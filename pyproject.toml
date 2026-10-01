@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "duckdb-iceberg-mcp"
-version = "0.1.0"
-description = "MCP server for querying Apache Iceberg tables via AWS Glue using DuckDB"
+version = "0.2.0"
+description = "Local SQL CLI and MCP server for FFWD and Apache Iceberg REST catalogs using DuckDB"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
@@ -13,20 +13,21 @@ authors = [
     { name = "Yee Soon", email = "yee.soon@core0.io" },
 ]
 dependencies = [
-    "mcp[cli]>=1.9",
-    "duckdb>=1.2",
-    "sqlglot>=25.0",
+    "mcp[cli]>=1.27.1,<2",
+    "duckdb>=1.5.3,<1.6",
+    "sqlglot>=30.8,<31",
     "pydantic-settings>=2.6",
+    "python-dotenv>=1.0",
     "PyJWT[crypto]>=2.10",
     "httpx>=0.27",
-    "boto3>=1.34",
     "uvicorn>=0.32",
     "starlette>=0.41",
     "pandas>=2.0",
-    "fastavro>=1.9",
+    "pytz>=2025.2",
 ]
 
 [project.optional-dependencies]
+glue = ["boto3>=1.34"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -34,10 +35,22 @@ dev = [
 
 [project.scripts]
 duckdb-iceberg-mcp = "duckdb_iceberg_mcp.server:main"
+duckdb-iceberg = "duckdb_iceberg_mcp.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/duckdb_iceberg_mcp"]
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src", "/config/*.env.example", "/tests", "/scripts/smoke_test.py",
+    "/README.md", "/LICENSE", "/pyproject.toml",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.10.9",
+]

@@ -5,7 +5,12 @@ from jwt import PyJWKClient
 from starlette.responses import Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from duckdb_iceberg_mcp.auth.session import current_sub, current_token
+from duckdb_iceberg_mcp.auth.session import (
+    current_session_id,
+    current_sub,
+    current_token,
+    normalize_session_id,
+)
 from duckdb_iceberg_mcp.config import Settings
 
 
@@ -85,6 +90,15 @@ class BearerAuthMiddleware:
             validate_request(auth, self._config)
         except AuthError as exc:
             response = Response(str(exc), status_code=401)
+            await response(scope, receive, send)
+            return
+
+        header_key = self._config.mcp_session_header.lower().encode("latin-1")
+        raw_sid = headers.get(header_key, b"").decode("utf-8", errors="replace")
+        try:
+            current_session_id.set(normalize_session_id(raw_sid))
+        except ValueError as exc:
+            response = Response(str(exc), status_code=400)
             await response(scope, receive, send)
             return
 
